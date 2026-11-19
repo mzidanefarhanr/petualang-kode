@@ -1,0 +1,29 @@
+# Dependensi
+node_modules/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Next.js (kelas/)
+kelas/.next/
+kelas/out/
+
+# scratch-gui (editor/)
+editor/build/
+editor/dist/
+
+# Pengujian & coverage
+.playwright-mcp/
+coverage/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Log & sistem
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db

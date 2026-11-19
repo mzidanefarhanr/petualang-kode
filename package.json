@@ -1,0 +1,9 @@
+{
+  "name": "petualang-kode",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "kelas",
+    "editor"
+  ]
+}

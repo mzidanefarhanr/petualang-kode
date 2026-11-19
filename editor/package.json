@@ -1,0 +1,13 @@
+{
+  "name": "editor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node server.mjs",
+    "build": "node scripts/build.mjs"
+  },
+  "dependencies": {
+    "@scratch/scratch-gui": "15.3.0"
+  }
+}
