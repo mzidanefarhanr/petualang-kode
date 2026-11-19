@@ -13,6 +13,7 @@ kelas/out/
 # scratch-gui (editor/)
 editor/build/
 editor/dist/
+editor/vendor/
 
 # Pengujian & coverage
 .playwright-mcp/
@@ -24,6 +25,7 @@ playwright/.cache/
 
 # Log & sistem
 *.log
+*.tsbuildinfo
 npm-debug.log*
 .DS_Store
 Thumbs.db

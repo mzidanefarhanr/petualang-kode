@@ -2,17 +2,12 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {createRequire} from 'node:module';
 
-const require = createRequire(import.meta.url);
 const here = path.dirname(fileURLToPath(import.meta.url));
 
-// Our own files first; everything else falls back to the prebuilt scratch-gui
-// bundle shipped in node_modules. scratch-gui stays an unmodified dependency.
-const roots = [
-    path.join(here, 'public'),
-    path.dirname(require.resolve('@scratch/scratch-gui'))
-];
+// Our own files first; everything else falls back to the vendored scratch-gui
+// bundle (editor/vendor), which is the prebuilt @scratch/scratch-gui dist.
+const roots = [path.join(here, 'public'), path.join(here, 'vendor')];
 
 const port = Number(process.env.EDITOR_PORT || 8601);
 
