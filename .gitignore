@@ -27,5 +27,6 @@ playwright/.cache/
 *.log
 *.tsbuildinfo
 npm-debug.log*
+.minio-data/
 .DS_Store
 Thumbs.db

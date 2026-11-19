@@ -1088,6 +1088,7 @@ Penggunaan intent dan pembuatan snapshot harus dilakukan secara aman terhadap re
 |---|---:|---|
 | `BELUM_MASUK` | 401 | Sesi tidak ada atau kedaluwarsa |
 | `PERAN_TIDAK_SESUAI` | 403 | Peran pengguna tidak sesuai |
+| `CSRF_TIDAK_VALID` | 403 | Token CSRF tidak ada atau tidak cocok (endpoint mutasi) |
 | `TUGAS_BELUM_DIBUKA` | 403 | Tugas belum dimulai |
 | `TUGAS_DITUTUP` | 403 | Editor mencoba menyimpan perubahan baru setelah tenggat |
 | `BUKAN_ANGGOTA` | 404 | Murid bukan anggota kelas |

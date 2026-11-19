@@ -1,9 +1,12 @@
 import {NextResponse, type NextRequest} from 'next/server';
 import {corsHeaders} from '@/lib/http/cors';
+import {CSRF_COOKIE, csrfCookieOptions, newCsrfToken} from '@/lib/csrf';
 
 /*
- * CORS terpusat untuk seluruh endpoint /api/* (API-CONTRACTS.md Bagian 2.2).
- * Menangani preflight OPTIONS dan menambahkan header CORS pada semua respons API.
+ * Middleware terpusat untuk seluruh endpoint /api/*:
+ * - CORS eksplisit (API-CONTRACTS.md 2.2)
+ * - penanganan preflight OPTIONS
+ * - penanaman cookie CSRF ganda bila belum ada
  */
 export function middleware(request: NextRequest) {
     const origin = request.headers.get('origin');
@@ -16,6 +19,11 @@ export function middleware(request: NextRequest) {
     for (const [name, value] of Object.entries(corsHeaders(origin))) {
         response.headers.set(name, value);
     }
+
+    if (!request.cookies.get(CSRF_COOKIE)?.value) {
+        response.cookies.set(CSRF_COOKIE, newCsrfToken(), csrfCookieOptions());
+    }
+
     return response;
 }
 

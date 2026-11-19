@@ -190,7 +190,8 @@ Gunakan tiga migrasi awal.
 db/migrations/
 ├── 001_akun.sql
 ├── 002_kelas.sql
-└── 003_tugas_dan_pekerjaan.sql
+├── 003_tugas_dan_pekerjaan.sql
+└── 004_idempotency.sql
 ```
 
 Urutan eksekusi wajib:
@@ -198,6 +199,7 @@ Urutan eksekusi wajib:
 1. `001_akun.sql`
 2. `002_kelas.sql`
 3. `003_tugas_dan_pekerjaan.sql`
+4. `004_idempotency.sql`
 
 Jangan menjalankan migrasi secara acak.
 
@@ -748,6 +750,35 @@ Kepemilikan guru tetap harus diperiksa oleh aplikasi melalui hubungan:
 Panjang komentar dibatasi oleh aplikasi sesuai `REQUIREMENTS.md`.
 
 Komentar kosong ditolak oleh database.
+
+---
+
+## 5.4 Migrasi 004 — Idempotensi Permintaan
+
+Berkas: `004_idempotency.sql`
+
+### Tabel idempotency_keys
+
+Menyimpan pemetaan nilai header `Idempotency-Key` ke sumber daya yang dihasilkan, agar request mutasi yang diulang (mis. karena jaringan) tidak menghasilkan baris ganda (API-CONTRACTS.md Bagian 5.4).
+
+```sql
+create table idempotency_keys (
+  kode        text not null,
+  scope       text not null,
+  resource_id uuid not null,
+  dibuat_pada timestamptz not null default now(),
+
+  primary key (kode, scope)
+);
+```
+
+Alasan desain:
+
+- `kode` adalah nilai header `Idempotency-Key` dari klien.
+- `scope` membedakan jenis operasi (mis. `submission`), sehingga satu kunci tidak bertabrakan antar operasi berbeda.
+- `resource_id` menunjuk baris yang dihasilkan operasi tersebut; pengulangan request mengembalikan baris yang sama.
+- Primary key gabungan menjamin satu kunci hanya menghasilkan satu sumber daya.
+- Tabel ini tidak menyimpan data proyek dan tidak menggantikan pemeriksaan kepemilikan.
 
 ---
 

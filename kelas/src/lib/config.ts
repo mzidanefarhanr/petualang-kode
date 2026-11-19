@@ -1,0 +1,11 @@
+/*
+ * Batas operasional dan konstanta waktu (REQUIREMENTS.md Bagian 5, DECISIONS D-13/D-14).
+ */
+
+export const MAX_SB3_SIZE_BYTES = Number(process.env.MAX_SB3_SIZE_BYTES ?? 52428800);
+
+// Minimal 20 detik antar snapshot otomatis untuk tugas dan murid yang sama.
+export const AUTOSAVE_MIN_INTERVAL_SECONDS = 20;
+
+// Masa toleransi singkat untuk menyelesaikan unggahan akhir setelah tenggat.
+export const SAVE_INTENT_TOLERANCE_SECONDS = 30;
