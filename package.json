@@ -7,6 +7,8 @@
     "editor"
   ],
   "scripts": {
-    "db:migrate": "node --env-file-if-exists=.env db/migrate.mjs"
+    "db:migrate": "node --env-file-if-exists=.env db/migrate.mjs",
+    "db:retention": "node --env-file-if-exists=.env db/retention.mjs",
+    "db:seed": "node --env-file-if-exists=.env db/seed-dev.mjs"
   }
 }

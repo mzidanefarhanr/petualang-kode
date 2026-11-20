@@ -1,5 +1,6 @@
 # Dependensi
 node_modules/
+.objects/
 
 # Environment
 .env

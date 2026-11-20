@@ -13,5 +13,8 @@ export const SAVE_INTENT_TOLERANCE_SECONDS = 30;
 // Batas awal murid per kelas (REQUIREMENTS.md Bagian 5).
 export const MAX_MURID_PER_KELAS = 60;
 
+// Retensi snapshot biasa per (assignment_id, student_id) (DATABASE.md Bagian 7).
+export const RETENSI_SNAPSHOT_NORMAL = 20;
+
 // Batas panjang komentar (REQUIREMENTS.md Bagian 5).
 export const MAX_KOMENTAR_PANJANG = 2000;

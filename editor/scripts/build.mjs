@@ -13,4 +13,11 @@ fs.mkdirSync(outDir, {recursive: true});
 fs.cpSync(vendorDir, outDir, {recursive: true});
 fs.cpSync(path.join(editorRoot, 'public'), outDir, {recursive: true});
 
+// Konfigurasi runtime untuk build statis.
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+fs.writeFileSync(
+    path.join(outDir, 'config.js'),
+    `window.__SCRATCH_KELAS__ = ${JSON.stringify({appUrl})};\n`
+);
+
 console.log('Build editor selesai di: ' + outDir);

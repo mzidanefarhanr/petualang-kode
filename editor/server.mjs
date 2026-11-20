@@ -48,6 +48,14 @@ http.createServer((req, res) => {
     let urlPath = decodeURIComponent(req.url.split('?')[0]);
     if (urlPath === '/') urlPath = '/index.html';
 
+    // Konfigurasi runtime: origin aplikasi kelas untuk panggilan API lintas subdomain.
+    if (urlPath === '/config.js') {
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+        res.writeHead(200, {'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-store'});
+        res.end('window.__SCRATCH_KELAS__ = ' + JSON.stringify({appUrl}) + ';\n');
+        return;
+    }
+
     const filePath = findFile(urlPath);
     if (!filePath) {
         res.writeHead(404, {'Content-Type': 'text/plain; charset=utf-8'});

@@ -1,4 +1,6 @@
 import {AwsClient} from 'aws4fetch';
+import {mkdir, readFile, rm, writeFile} from 'node:fs/promises';
+import {dirname, join} from 'node:path';
 import {toArrayBuffer} from './files';
 
 /*
@@ -92,8 +94,34 @@ export class MemoryStorage implements ObjectStorage {
     }
 }
 
+/*
+ * Penyimpanan lokal (filesystem) untuk pengembangan/pengujian tanpa S3.
+ * Tidak dipakai bila object storage S3 dikonfigurasi.
+ */
+export class LocalStorage implements ObjectStorage {
+    constructor(private readonly baseDir: string) {}
+
+    private filePath(key: string): string {
+        return join(this.baseDir, key);
+    }
+
+    async put(key: string, bytes: Uint8Array): Promise<void> {
+        const target = this.filePath(key);
+        await mkdir(dirname(target), {recursive: true});
+        await writeFile(target, bytes);
+    }
+
+    async get(key: string): Promise<Uint8Array> {
+        return new Uint8Array(await readFile(this.filePath(key)));
+    }
+
+    async delete(key: string): Promise<void> {
+        await rm(this.filePath(key), {force: true});
+    }
+}
+
 let override: ObjectStorage | null = null;
-let singleton: S3Storage | null = null;
+let singleton: ObjectStorage | null = null;
 
 export function setStorage(storage: ObjectStorage | null): void {
     override = storage;
@@ -104,13 +132,20 @@ export function getStorage(): ObjectStorage {
         return override;
     }
     if (!singleton) {
-        singleton = new S3Storage({
-            endpoint: process.env.S3_ENDPOINT ?? 'http://localhost:9000',
-            bucket: process.env.S3_BUCKET ?? 'scratch-kelas',
-            region: process.env.S3_REGION ?? 'us-east-1',
-            accessKeyId: process.env.S3_ACCESS_KEY_ID ?? '',
-            secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? ''
-        });
+        const driver = process.env.OBJECT_STORAGE || (process.env.S3_ACCESS_KEY_ID ? 's3' : 'local');
+        if (driver === 'local') {
+            singleton = new LocalStorage(
+                process.env.OBJECT_STORAGE_DIR || join(process.cwd(), '.objects')
+            );
+        } else {
+            singleton = new S3Storage({
+                endpoint: process.env.S3_ENDPOINT ?? 'http://localhost:9000',
+                bucket: process.env.S3_BUCKET ?? 'scratch-kelas',
+                region: process.env.S3_REGION ?? 'us-east-1',
+                accessKeyId: process.env.S3_ACCESS_KEY_ID ?? '',
+                secretAccessKey: process.env.S3_SECRET_ACCESS_KEY ?? ''
+            });
+        }
     }
     return singleton;
 }
