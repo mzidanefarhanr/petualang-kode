@@ -8,12 +8,54 @@ import {isUuid, ISO} from '@/lib/http/uuid';
 import {isJsonRequest, readRawBytes} from '@/lib/http/body';
 import {CSRF_COOKIE, assertCsrf} from '@/lib/csrf';
 import {createSubmission, type CreateSubmissionInput} from '@/server/submissions';
+import {listSubmissionsForTeacher} from '@/server/assignments';
 
 /*
- * POST /api/v1/assignments/{assignment_id}/submissions (API-CONTRACTS.md 5.1)
- * Tombol Kumpulkan. Mendukung sumber `snapshot_id` atau biner `.sb3`,
- * pengumpulan berulang, dan Idempotency-Key.
+ * GET  /api/v1/assignments/{assignment_id}/submissions (daftar nilai guru,
+ *      API-CONTRACTS.md 6.7) — semua anggota kelas termasuk yang belum mengumpulkan.
+ * POST /api/v1/assignments/{assignment_id}/submissions (tombol Kumpulkan murid,
+ *      API-CONTRACTS.md 5.1).
  */
+export async function GET(request: NextRequest, context: {params: Promise<{assignment_id: string}>}) {
+    try {
+        const {assignment_id: assignmentId} = await context.params;
+        if (!isUuid(assignmentId)) {
+            throw new ApiError(400, 'PERMINTAAN_TIDAK_VALID', 'assignment_id tidak valid.');
+        }
+
+        const db = getPool();
+        const session = await auth();
+        await requireAccess(db, session, {role: 'guru', assignmentId});
+
+        const data = await listSubmissionsForTeacher(db, assignmentId);
+
+        return Response.json({
+            assignment: {
+                id: data.assignment.id,
+                judul: data.assignment.judul,
+                ditutup_pada: ISO(data.assignment.ditutup_pada)
+            },
+            murid: data.murid.map(row => ({
+                student_id: row.student_id,
+                nama: row.nama,
+                jumlah_kumpul: row.jumlah_kumpul,
+                terakhir_dikumpulkan_pada: row.terakhir_dikumpulkan_pada
+                    ? ISO(row.terakhir_dikumpulkan_pada)
+                    : null,
+                submission_id: row.submission_id,
+                terlambat: row.terlambat,
+                perlu_tinjauan: row.perlu_tinjauan,
+                jumlah_snapshot: row.jumlah_snapshot,
+                snapshot_terakhir_pada: row.snapshot_terakhir_pada
+                    ? ISO(row.snapshot_terakhir_pada)
+                    : null,
+                belum_kumpul: row.belum_kumpul
+            }))
+        });
+    } catch (error) {
+        return toErrorResponse(error);
+    }
+}
 export async function POST(
     request: NextRequest,
     context: {params: Promise<{assignment_id: string}>}

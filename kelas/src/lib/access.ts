@@ -25,6 +25,7 @@ export interface AccessSpec {
     assignmentId?: string;
     snapshotId?: string;
     submissionId?: string;
+    inviteId?: string;
 }
 
 export interface AccessResult {
@@ -32,6 +33,7 @@ export interface AccessResult {
     assignmentId?: string;
     snapshotId?: string;
     submissionId?: string;
+    inviteId?: string;
 }
 
 export async function requireAccess(
@@ -134,6 +136,24 @@ export async function requireAccess(
             throw Errors.bukanMilikAnda();
         }
         return {classId: rows[0].class_id, submissionId: spec.submissionId};
+    }
+
+    if (spec.inviteId) {
+        // Undangan adalah sumber daya guru; tidak ada akses murid.
+        if (!isGuru) {
+            throw Errors.bukanMilikAnda();
+        }
+        const {rows} = await db.query(
+            `select i.class_id
+               from invites i
+               join classes c on c.id = i.class_id
+              where i.id = $1 and c.teacher_id = $2`,
+            [spec.inviteId, userId]
+        );
+        if (!rows.length) {
+            throw Errors.bukanMilikAnda();
+        }
+        return {classId: rows[0].class_id, inviteId: spec.inviteId};
     }
 
     throw Errors.permintaanTidakValid('Spesifikasi akses tidak lengkap.');

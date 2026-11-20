@@ -9,3 +9,9 @@ export const AUTOSAVE_MIN_INTERVAL_SECONDS = 20;
 
 // Masa toleransi singkat untuk menyelesaikan unggahan akhir setelah tenggat.
 export const SAVE_INTENT_TOLERANCE_SECONDS = 30;
+
+// Batas awal murid per kelas (REQUIREMENTS.md Bagian 5).
+export const MAX_MURID_PER_KELAS = 60;
+
+// Batas panjang komentar (REQUIREMENTS.md Bagian 5).
+export const MAX_KOMENTAR_PANJANG = 2000;

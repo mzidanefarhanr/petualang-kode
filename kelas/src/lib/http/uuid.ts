@@ -5,3 +5,11 @@ export function isUuid(value: unknown): value is string {
 }
 
 export const ISO = (value: Date | string): string => new Date(value).toISOString();
+
+export function parseDate(value: unknown): Date | null {
+    if (typeof value !== 'string' || !value) {
+        return null;
+    }
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+}

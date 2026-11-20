@@ -191,3 +191,18 @@ export async function createSubmission(
         } satisfies SubmissionResult;
     });
 }
+
+export async function getSubmissionContent(
+    deps: Deps,
+    submissionId: string
+): Promise<{bytes: Uint8Array; isi_hash: string}> {
+    const {rows} = await deps.db.query('select object_key, isi_hash from submissions where id = $1', [
+        submissionId
+    ]);
+    const row = rows[0];
+    if (!row) {
+        throw new ApiError(404, 'BUKAN_MILIK_ANDA', 'Data tidak ditemukan.');
+    }
+    const bytes = await deps.storage.get(row.object_key);
+    return {bytes, isi_hash: row.isi_hash};
+}

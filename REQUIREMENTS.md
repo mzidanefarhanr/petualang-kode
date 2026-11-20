@@ -239,6 +239,8 @@ Angka di bawah adalah batas awal untuk implementasi. Angka yang belum diverifika
 | Penyimpanan paksa berkala | 5 menit | Selama sesi pengerjaan aktif. |
 | Ukuran satu komentar | 2000 karakter | Batas input komentar. |
 | Murid per kelas | 60 | Batas awal untuk satu kelas. |
+| Panjang `username` murid | 3 karakter | Minimal saat mendaftar lewat undangan. |
+| Panjang kata sandi | 6 karakter | Minimal saat murid mendaftar lewat undangan. |
 
 ### Aturan penerapan batas
 

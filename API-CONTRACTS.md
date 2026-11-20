@@ -951,6 +951,77 @@ Response:
 
 Murid hanya boleh membaca komentar pada submission miliknya sendiri.
 
+### 6.13 `GET /api/v1/schools` dan `POST /api/v1/schools`
+
+Endpoint pendukung UI guru untuk mengelola sekolah (milik sesi guru aktif).
+
+`GET` mengembalikan `{ "schools": [ { "id", "nama", "catatan" } ] }`.
+
+`POST` menerima:
+
+```json
+{ "nama": "SDN 01", "catatan": "opsional" }
+```
+
+Server menyimpan dengan `teacher_id = sesi_guru.id` dan mengembalikan `201`.
+
+### 6.14 `GET /api/v1/classes/{class_id}/invites`
+
+Endpoint pendukung UI guru: daftar undangan sebuah kelas, termasuk `kode` dan `tautan` agar guru dapat menyalin ulang tautan. Pemilik kelas harus guru aktif. `kode` hanya boleh tampil pada endpoint guru ini.
+
+### 6.15 `GET /api/v1/invites/{kode}`
+
+Informasi undangan publik (tanpa sesi), dipakai oleh halaman pendaftaran:
+
+```json
+{
+  "kode": "K7QM-3XPD",
+  "kelas": { "id": "uuid", "nama": "Kelas 6A" },
+  "berlaku_dari": "2026-11-18T04:00:00Z",
+  "berlaku_sampai": "2026-11-25T16:59:59Z",
+  "status": "berlaku"
+}
+```
+
+`status` bernilai `berlaku`, `dicabut`, `kedaluwarsa`, atau `penuh`. Kode tidak ditemukan mengembalikan `404 UNDANGAN_TIDAK_VALID`.
+
+### 6.16 `POST /api/v1/invites/{kode}/join`
+
+Pendaftaran murid melalui undangan (publik). Request:
+
+```json
+{ "nama": "Rani", "username": "rani", "email": "opsional", "password": "rahasia" }
+```
+
+Pemeriksaan:
+- Undangan ada, berada dalam masa berlaku, tidak dicabut, dan belum mencapai `maks_pemakaian`.
+- Jumlah anggota kelas belum mencapai batas (60).
+- `username` unik (tidak peka huruf besar/kecil); `email` unik bila diisi.
+- Kata sandi di-hash dengan algoritma kata sandi yang aman.
+
+Pemeriksaan undangan dan penambahan `dipakai` dilakukan secara atomik (baris undangan dikunci) agar batas pemakaian tidak terlewati oleh permintaan bersamaan.
+
+Response `201`:
+
+```json
+{
+  "student": { "id": "uuid", "nama": "Rani", "username": "rani" },
+  "kelas": { "id": "uuid", "nama": "Kelas 6A" }
+}
+```
+
+Error: `UNDANGAN_KEDALUWARSA`/`UNDANGAN_DICABUT`/`UNDANGAN_PENUH` (`410`), `UNDANGAN_TIDAK_VALID` (`404`), `KELAS_PENUH` (`409`), `USERNAME_SUDAH_DIPAKAI`/`EMAIL_SUDAH_DIPAKAI` (`409`).
+
+### 6.17 Endpoint murid (baca)
+
+Endpoint baca untuk kebutuhan halaman murid (mis. `/tugas`):
+
+- `GET /api/v1/student/classes` → `{ "classes": [ { "id", "nama", "guru", "school" } ] }`.
+- `GET /api/v1/student/assignments` → daftar tugas seluruh kelas yang diikuti, tiap entri menyertakan `status` (`belum_dibuka`/`dibuka`/`ditutup`), `boleh_edit`, `boleh_kumpul`, dan `jumlah_kumpul`. Status dihitung dari waktu server.
+- `GET /api/v1/student/assignments/{assignment_id}` → detail tugas (`assignment` dengan status/flags) + `hasil` (daftar pengumpulan milik murid) + `jumlah_snapshot`.
+
+Murid hanya melihat tugas pada kelas yang diikutinya; tugas kelas lain mengembalikan `404`.
+
 ---
 
 ## 7. Pemeriksaan izin
@@ -1103,6 +1174,9 @@ Penggunaan intent dan pembuatan snapshot harus dilakukan secara aman terhadap re
 | `UNDANGAN_TIDAK_VALID` | 404 | Kode undangan tidak ditemukan |
 | `ARSIP_TERLALU_BESAR` | 413 | File melebihi batas ukuran |
 | `SNAPSHOT_SUDAH_DIKUMPULKAN` | 409 | Snapshot sudah dikumpulkan |
+| `KELAS_PENUH` | 409 | Jumlah anggota kelas mencapai batas |
+| `USERNAME_SUDAH_DIPAKAI` | 409 | `username` murid sudah dipakai |
+| `EMAIL_SUDAH_DIPAKAI` | 409 | Email murid sudah dipakai |
 | `TERLALU_SERING` | 429 | Request melebihi batas |
 
 Jangan membuat error `ARSIP_TIDAK_VALID` berdasarkan pemeriksaan isi ZIP atau `project.json`, karena server tidak mengurai file `.sb3`.

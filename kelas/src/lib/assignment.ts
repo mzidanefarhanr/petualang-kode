@@ -9,6 +9,7 @@ export interface AssignmentRow {
     id: string;
     class_id: string;
     judul: string;
+    instruksi: string | null;
     dibuka_pada: Date;
     ditutup_pada: Date;
     izinkan_terlambat: boolean;
@@ -21,7 +22,7 @@ export async function loadAssignmentForStudent(
     studentId: string
 ): Promise<AssignmentRow | null> {
     const {rows} = await db.query(
-        `select a.id, a.class_id, a.judul, a.dibuka_pada, a.ditutup_pada,
+        `select a.id, a.class_id, a.judul, a.instruksi, a.dibuka_pada, a.ditutup_pada,
                 a.izinkan_terlambat, now() as sekarang
            from assignments a
            join class_members cm on cm.class_id = a.class_id and cm.student_id = $2
