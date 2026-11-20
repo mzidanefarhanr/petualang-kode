@@ -87,7 +87,7 @@ export type StatusUndangan = 'berlaku' | 'dicabut' | 'kedaluwarsa' | 'penuh';
 
 export interface InviteInfo {
     kode: string;
-    kelas: {id: string; nama: string};
+    kelas: {id: string; nama: string; guru: string};
     berlaku_dari: Date;
     berlaku_sampai: Date;
     status: StatusUndangan;
@@ -116,9 +116,10 @@ function computeStatus(invite: {
 export async function getInviteInfo(db: Queryable, kode: string): Promise<InviteInfo> {
     const {rows} = await db.query(
         `select i.kode, i.berlaku_dari, i.berlaku_sampai, i.maks_pemakaian, i.dipakai, i.dicabut_pada,
-                c.id as class_id, c.nama as class_nama, now() as sekarang
+                c.id as class_id, c.nama as class_nama, t.nama as guru_nama, now() as sekarang
            from invites i
            join classes c on c.id = i.class_id
+           join teachers t on t.id = c.teacher_id
           where i.kode = $1`,
         [kode]
     );
@@ -128,7 +129,7 @@ export async function getInviteInfo(db: Queryable, kode: string): Promise<Invite
     }
     return {
         kode: row.kode,
-        kelas: {id: row.class_id, nama: row.class_nama},
+        kelas: {id: row.class_id, nama: row.class_nama, guru: row.guru_nama},
         berlaku_dari: row.berlaku_dari,
         berlaku_sampai: row.berlaku_sampai,
         status: computeStatus(row)

@@ -111,11 +111,12 @@ export interface StudentSubmissionSummary {
     perlu_tinjauan: boolean | null;
     jumlah_snapshot: number;
     snapshot_terakhir_pada: Date | null;
+    komentar_terakhir: string | null;
     belum_kumpul: boolean;
 }
 
 export interface AssignmentSubmissions {
-    assignment: {id: string; judul: string; ditutup_pada: Date};
+    assignment: {id: string; class_id: string; judul: string; ditutup_pada: Date};
     murid: StudentSubmissionSummary[];
 }
 
@@ -140,7 +141,8 @@ export async function listSubmissionsForTeacher(
                 last.terlambat,
                 last.perlu_tinjauan,
                 coalesce(snap.jumlah_snapshot, 0) as jumlah_snapshot,
-                snap.snapshot_terakhir_pada
+                snap.snapshot_terakhir_pada,
+                kom.isi as komentar_terakhir
            from class_members cm
            join students st on st.id = cm.student_id
            left join (
@@ -153,13 +155,23 @@ export async function listSubmissionsForTeacher(
                select student_id, count(*)::int as jumlah_snapshot, max(diambil_pada) as snapshot_terakhir_pada
                  from snapshots where assignment_id = $1 group by student_id
            ) snap on snap.student_id = cm.student_id
+           left join lateral (
+               select c.isi from comments c
+                where c.submission_id = last.id
+                order by c.dibuat_pada desc limit 1
+           ) kom on true
           where cm.class_id = $2
           order by st.nama`,
         [assignmentId, assignment.class_id]
     );
 
     return {
-        assignment: {id: assignment.id, judul: assignment.judul, ditutup_pada: assignment.ditutup_pada},
+        assignment: {
+            id: assignment.id,
+            class_id: assignment.class_id,
+            judul: assignment.judul,
+            ditutup_pada: assignment.ditutup_pada
+        },
         murid: rows.map(row => ({
             student_id: row.student_id,
             nama: row.nama,
@@ -170,9 +182,40 @@ export async function listSubmissionsForTeacher(
             perlu_tinjauan: row.perlu_tinjauan ?? null,
             jumlah_snapshot: Number(row.jumlah_snapshot),
             snapshot_terakhir_pada: row.snapshot_terakhir_pada ?? null,
+            komentar_terakhir: row.komentar_terakhir ?? null,
             belum_kumpul: Number(row.jumlah_kumpul) === 0
         }))
     };
+}
+
+export interface ClassAssignmentSummary {
+    id: string;
+    judul: string;
+    dibuka_pada: Date;
+    ditutup_pada: Date;
+    jumlah_kumpul: number;
+}
+
+export async function listClassAssignments(
+    db: Queryable,
+    classId: string
+): Promise<ClassAssignmentSummary[]> {
+    const {rows} = await db.query(
+        `select a.id, a.judul, a.dibuka_pada, a.ditutup_pada,
+                (select count(distinct s.student_id)::int
+                   from submissions s where s.assignment_id = a.id) as jumlah_kumpul
+           from assignments a
+          where a.class_id = $1
+          order by a.ditutup_pada desc`,
+        [classId]
+    );
+    return rows.map(row => ({
+        id: row.id,
+        judul: row.judul,
+        dibuka_pada: row.dibuka_pada,
+        ditutup_pada: row.ditutup_pada,
+        jumlah_kumpul: Number(row.jumlah_kumpul)
+    }));
 }
 
 export interface VersionEntry {

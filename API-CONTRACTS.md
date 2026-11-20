@@ -1022,6 +1022,25 @@ Endpoint baca untuk kebutuhan halaman murid (mis. `/tugas`):
 
 Murid hanya melihat tugas pada kelas yang diikutinya; tugas kelas lain mengembalikan `404`.
 
+### 6.18 `GET /api/v1/assignments/{assignment_id}/students/{student_id}/history`
+
+Riwayat pengerjaan seorang murid pada satu tugas (guru pemilik kelas). Dipakai Layar 7.
+
+```json
+{
+  "assignment": { "id": "uuid", "judul": "Lab 3", "dibuka_pada": "...", "ditutup_pada": "..." },
+  "student": { "id": "uuid", "nama": "Rani", "username": "rani" },
+  "snapshots": [
+    { "id": "uuid", "diambil_pada": "...", "jenis_simpan": "manual", "ukuran_bytes": 184320 }
+  ],
+  "submissions": [
+    { "id": "uuid", "dikumpulkan_pada": "...", "terlambat": false, "perlu_tinjauan": false, "catatan_siswa": null }
+  ]
+}
+```
+
+Daftar snapshot tetap tersedia walaupun murid belum pernah mengumpulkan (mis. `submission_id` null pada Layar 6). Murid bukan anggota kelas atau tugas bukan milik guru → `404`. Tidak mengirim `object_key`.
+
 ---
 
 ## 7. Pemeriksaan izin
