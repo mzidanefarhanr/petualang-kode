@@ -1,20 +1,24 @@
-# KONTEKS.md — Ringkasan Proyek Scratch Kelas
+# KONTEKS.md — Ringkasan Proyek Petualang Kode
 
-> Dokumen ini adalah ringkasan satu halaman untuk memberi konteks cepat kepada siapa pun (termasuk agen AI) yang baru masuk ke proyek ini. Untuk detail mengikat, lihat dokumen acuan di bagian akhir.
+> Dokumen ini adalah ringkasan satu halaman untuk memberi konteks cepat kepada siapa pun (termasuk agen AI) yang masuk ke proyek **Petualang Kode**. Untuk detail mengikat, lihat dokumen acuan di bagian akhir.
 
 ---
 
 ## Apa yang dibangun
 
-Platform belajar Scratch untuk satu guru yang mengajar di beberapa sekolah. Guru membuat kelas, membagikan tautan undangan berbatas waktu, memberi tugas dengan jendela buka–tutup, dan meninjau hasil kerja murid. Murid bergabung lewat undangan, mengerjakan proyek di editor berbasis `scratch-gui`, mengumpulkan berkas `.sb3`, lalu mengunggahnya sendiri ke akun Scratch mereka.
+**Petualang Kode** adalah platform belajar coding visual interaktif (ala Scratch / PictoBlox / CodeMonkey) yang dipandu langsung secara sinkron (*live-guided*) oleh satu **Admin** (pengajar).
 
-Diferensiasi utama: **riwayat pengerjaan**. Setiap simpan otomatis dan simpan manual menghasilkan snapshot, sehingga guru bisa melihat proses, bukan hanya hasil akhir. Ini yang menjawab pertanyaan "siapa benar-benar mengerjakan".
+Admin membuat kelas, mendaftarkan akun siswa, membagikan tautan **invite class**, dan menyusun materi belajar berbentuk **rangkaian Stage** (`Stage 1`, `Stage 2`, dst.). Tidak setiap stage berupa teka-teki blok coding—sebuah stage bisa berupa:
+1. **Stage Cerita (`story`)**: cerita berjalan dengan latar, karakter/gambar bergerak di atas **timeline** berbasis waktu, dialog, dan **suara** (musik/efek/narasi).
+2. **Stage Challenge (`challenge`)**: tantangan visual blok ala **CodeMonkey** untuk menggerakkan karakter di panggung/peta 2D menuju tujuan menggunakan blok visual (**Blockly**), lengkap dengan animasi langkah, efek suara, dan pemeriksaan solusi otomatis.
+
+Saat pembelajaran berlangsung (maksimal **20 siswa** dalam satu sesi), **layar seluruh siswa terkunci mengikuti stage yang sedang ditampilkan Admin** secara real-time melalui WebSocket.
 
 ---
 
 ## Siapa yang mengerjakan
 
-Satu guru, bekerja sendirian. Tidak ada tim, tidak ada peninjau kode, tidak ada yang menggantikan saat libur. Konsekuensinya: perubahan kecil dan jelas lebih berharga daripada perubahan besar dan pintar.
+Satu pengajar/pengembang bekerja sendirian. Tidak ada tim developer, tidak ada peninjau kode, dan tidak ada tim operasional terpisah. Konsekuensinya: arsitektur harus tetap sederhana (satu aplikasi terpadu), perubahan kecil dan jelas lebih berharga daripada abstraksi rumit, dan kode harus mudah dirawat serta di-deploy online sendiri.
 
 ---
 
@@ -22,10 +26,10 @@ Satu guru, bekerja sendirian. Tidak ada tim, tidak ada peninjau kode, tidak ada 
 
 | Peran | Siapa | Yang bisa dilakukan |
 |---|---|---|
-| Guru | Anda. Satu akun, banyak sekolah. | Membuat kelas, undangan, tugas; melihat semua pengumpulan dan riwayat; memberi komentar. |
-| Murid | Anak-anak SD di sekolah Anda. | Bergabung lewat undangan, mengerjakan tugas di dalam jendela waktunya, mengumpulkan berkali-kali, melihat komentar, mengunduh `.sb3`. |
+| **Admin** | Satu akun pengajar/pemilik | Membuat kelas, akun siswa, dan invite class; menyusun materi (stage cerita ber-timeline + suara, serta stage challenge blok); menjalankan sesi live; mengontrol stage & pemutaran cerita di layar semua siswa; memantau progres siswa secara langsung. |
+| **Siswa** | Anak-anak yang diundang ke kelas (maks. 20/sesi) | Masuk memakai akun yang dibuatkan Admin, bergabung lewat invite class, menonton stage cerita yang dikendalikan Admin, dan menyusun blok pada stage challenge ketika dibuka Admin. Tidak bisa mendaftar sendiri, membuat materi, atau melompati stage. |
 
-Tidak ada admin, wali murid, atau kepala sekolah di v1.
+Tidak ada peran multi-admin, wali murid, atau registrasi publik mandiri di v1.
 
 ---
 
@@ -33,82 +37,55 @@ Tidak ada admin, wali murid, atau kepala sekolah di v1.
 
 | Bagian | Pilihan |
 |---|---|
-| Aplikasi kelas | Next.js (App Router), TypeScript |
-| Editor | `scratch-gui` yang dimodifikasi, aplikasi terpisah di subdomain |
-| Database | PostgreSQL 15+ |
-| Penyimpanan berkas | objek S3-kompatibel, `.sb3` apa adanya |
+| Aplikasi web & server real-time | Next.js (App Router), TypeScript, Custom Node.js HTTP + WebSocket Server (`ws`) |
+| Editor blok visual | Blockly (`blockly`) |
+| Panggung cerita & peta challenge | HTML5 Canvas / SVG / DOM terstruktur + Web Audio / `<audio>` |
 | Gaya | Tailwind CSS |
-| Uji | Vitest (unit), Playwright (alur) |
+| Database | PostgreSQL 15+ (SQL migrasi sebagai sumber kebenaran) |
+| Penyimpanan media (gambar & suara) | Volume persisten lokal / S3-kompatibel |
+| Uji | Vitest (unit & integrasi), Playwright (E2E termasuk sinkronisasi real-time) |
 
-**Sengaja tidak dipakai:** Rust, offline-first/service worker, GraphQL, ORM yang mengklaim skema sendiri sebagai sumber kebenaran, tabel sesi, mesin Scratch tulisan sendiri.
+**Sengaja tidak dipakai:** microservices/multi-repo, GraphQL, tabel sesi buatan sendiri, SaaS real-time berbayar terpisah, mesin Scratch `.sb3` (`scratch-gui`/`scratch-vm`), mode offline-first.
 
 ---
 
 ## Alur inti
 
-1. Guru membuat kelas dan tautan undangan (berlaku terbatas, bisa dicabut).
-2. Murid membuka tautan, mengisi nama/email opsional/kata sandi, masuk ke kelas.
-3. Guru membuat tugas dengan jendela `dibuka_pada`–`ditutup_pada`.
-4. Murid membuka editor hanya di dalam jendela waktu, mengerjakan proyek.
-5. Simpan otomatis (debounce 30 detik, paksa tiap 5 menit, `sendBeacon` saat tutup tab) dan simpan manual membuat **snapshot** (deduplikasi berdasarkan hash isi).
-6. Murid menekan **Kumpulkan** → baris **submission** baru, menyalin referensi objek dari snapshot terakhir. Boleh berkali-kali.
-7. Guru melihat daftar nilai (semua murid, termasuk yang belum mengumpulkan), membuka riwayat snapshot per murid, mengunduh `.sb3` pada titik waktu mana pun, dan memberi komentar.
-8. Murid mengunduh `.sb3` terakhirnya untuk diunggah ke akun Scratch sendiri.
+1. Pengunjung membuka **Landing Page** (`/`) untuk melihat pengenalan **Petualang Kode**, fitur utama, tombol **Masuk**, dan kolom memasukkan kode **invite class** (tidak langsung dilempar ke halaman login).
+2. Admin masuk di `/masuk`, membuat kelas, dan membuat akun siswa (`username` + kata sandi/PIN) serta tautan/kode **invite class**.
+2. Admin menyusun **Pelajaran (Lesson)** berisi urutan **Stage**:
+   - Stage **Cerita**: mengatur latar, aset gambar bergerak, track **timeline** (waktu mulai/selesai, gerak posisi, dialog), dan track **suara**.
+   - Stage **Challenge**: mengatur peta 2D (ukuran grid, posisi awal karakter, target, koin/bintang, rintangan), daftar blok Blockly yang tersedia, serta efek suara.
+3. Admin membuka **Sesi Live** untuk satu kelas dan satu pelajaran.
+4. Siswa masuk memakai akun yang dibuat Admin, membuka tautan **invite class**, lalu otomatis masuk ke ruang sesi live.
+5. Layar siswa **terkunci** pada stage aktif yang dipilih Admin:
+   - Pada stage **Cerita**: Admin memicu putar/jeda/ulang timeline cerita, semua layar siswa memutar animasi dan suara yang sama.
+   - Pada stage **Challenge**: saat interaksi dibuka Admin, siswa menyusun blok dan menekan **Jalankan** untuk menggerakkan karakter di peta; hasil percobaan & status selesai langsung terkirim ke dashboard Admin.
+6. Admin memindah ke stage berikutnya/sebelumnya atau mengakhiri sesi kapan saja.
 
 ---
 
 ## Model data ringkas
-teachers ─┬─< schools
-└─< classes ─┬─< class_members >─ students
-├─< invites
-└─< assignments ─┬─< submissions ─< comments
-└─< snapshots
 
-
-- `snapshots` = rekaman otomatis, boleh dihapus retensi (20 terakhir per tugas–murid, kecuali yang pernah dikumpulkan).
-- `submissions` = tindakan sadar murid, menyalin `object_key`/`isi_hash`/`ukuran_bytes` dari snapshot. Tidak ada FK ke `snapshots`.
-- `terlambat` disimpan saat kejadian, tidak dihitung ulang saat dibaca.
-- `object_key` tidak pernah sampai ke klien; berkas disajikan lewat endpoint yang memeriksa izin.
-
-Detail lengkap di `DATABASE.md`.
+```text
+admins ─┬─< media_assets
+        ├─< classes ─┬─< class_members >─ students
+        │            ├─< class_invites
+        │            └─< live_sessions ─< student_stage_progress
+        └─< lessons ───< stages
+```
 
 ---
 
 ## Batas keras (tidak bisa dinegosiasikan)
 
-1. **Jangan pernah menyentuh isi `.sb3`.** Simpan apa adanya, kirim apa adanya. Jangan urai lalu susun ulang, jangan sunting `project.json`. Arsip yang diubah bisa ditolak akun Scratch murid — dan mengunggah ke akun Scratch mereka adalah tujuan utama proyek.
-2. **Isi `.sb3` tidak pernah masuk database.** Hanya `object_key` dan `isi_hash`.
-3. **Waktu selalu dari server** (`now()`), tidak pernah dari klien untuk keputusan apa pun.
-4. **`object_key` tidak pernah sampai ke klien.**
-5. **Jangan memercayai `class_id`/`assignment_id`/`submission_id` dari klien.** Selalu telusuri rantai kepemilikan sampai `teachers.id`.
-6. **Selalu simpan pengumpulan**, tandai `terlambat`, biarkan guru memutuskan. Jangan menolak simpan diam-diam.
-7. **`terlambat` disimpan saat kejadian**, tidak dihitung ulang.
-8. **Berkas migrasi tidak pernah diubah setelah dijalankan.**
-9. **Jangan membuat tabel sesi.** Sesi di cookie bertanda tangan atau library auth.
-10. **Jangan menulis mesin Scratch sendiri.** `scratch-vm` sudah benar.
-11. **Jangan membaca isi `.sb3` saat menampilkan halaman.** Metadata seperti `jumlah_balok` diisi sekali saat snapshot dibuat.
-
----
-
-## Yang sengaja tidak ada di v1
-
-Mode offline, VM Scratch sendiri, Rust, mengubah `project.json`, ponsel, pratinjau langsung proyek di halaman guru, nilai/angka/rapor, notifikasi email, banyak guru per kelas, bahasa selain Indonesia, distribusi proyek antar murid, integrasi LMS.
-
-Masing-masing punya alasan dan tanggal tinjau ulang di `REQUIREMENTS.md` bagian 4.
-
----
-
-## Kriteria selesai v1
-
-v1 selesai bila **semua** ini benar:
-
-1. Guru membuat kelas, undangan, dan mengirim satu tautannya ke satu murid.
-2. Murid bergabung, membuka editor, membuat proyek, dan menekan simpan.
-3. Guru melihat pengumpulannya dan mengunduh `.sb3`-nya.
-4. **`.sb3` itu diunggah ke akun Scratch sungguhan dan proyeknya berjalan utuh.** Ini uji penentu.
-5. Murid mengumpulkan ulang versi kedua, guru melihat dua baris di riwayat.
-6. Guru menggeser `ditutup_pada` ke masa depan, murid bisa mengerjakan lagi.
-7. Guru menutup undangan, murid baru tidak bisa bergabung, tetapi murid lama tetap bisa masuk.
+1. **Hanya Admin yang dapat membuat konten dan akun siswa.** Tidak ada endpoint registrasi publik untuk siswa maupun pembuatan materi oleh siswa.
+2. **Kontrol stage live berpusat di server.** Siswa tidak bisa berpindah stage di luar `active_stage_id` pada `live_sessions` yang sedang berjalan atau saat interaksi dikunci Admin.
+3. **Semua pemeriksaan izin dilakukan di server** (API dan handshake/event WebSocket wajib memverifikasi sesi JWT dan keanggotaan kelas/kepemilikan `admin_id`).
+4. **Waktu keputusan berasal dari server** (`now()` PostgreSQL), bukan jam perangkat siswa.
+5. **Berkas migrasi SQL (`db/migrations/`) tidak pernah diubah setelah dijalankan.** Perubahan skema selalu memakai berkas migrasi baru.
+6. **Tidak membuat tabel sesi sendiri.** Autentikasi memakai Auth.js strategi JWT di cookie `HttpOnly`.
+7. **Semua konten HTML/teks dan unggahan media divalidasi & dibatasi di server** (tipe MIME gambar/audio yang aman dan batas ukuran file).
 
 ---
 
@@ -116,28 +93,15 @@ v1 selesai bila **semua** ini benar:
 
 | Dokumen | Isi |
 |---|---|
-| `AGENTS.md` | Kontrak kerja agen: perintah, konvensi, batas keras, alur kerja |
-| `ARCHITECTURE.md` | Pembagian aplikasi dan batas komunikasi |
-| `DATABASE.md` | Skema database — sumber kebenaran SQL |
-| `API-CONTRACTS.md` | Rute, muatan, kode status, urutan pemeriksaan izin |
-| `DESIGN.md` | Layar, tata letak, aturan keadaan |
-| `REQUIREMENTS.md` | Apa yang v1 lakukan dan tidak, beserta alasannya |
-| `DECISIONS.md` | Keputusan yang sudah dikunci |
-| `TESTING.md` | Rencana pengujian dan gerbang kompatibilitas |
+| `AGENTS.md` | Kontrak kerja agen: konvensi, batas keras, alur kerja, struktur workspace |
+| `ARCHITECTURE.md` | Arsitektur aplikasi terpadu, WebSocket real-time, media, dan deployment online |
+| `REQUIREMENTS.md` | Kebutuhan fungsional, batas operasional (20 siswa/sesi), dan ruang lingkup v1 |
+| `DATABASE.md` | Skema database PostgreSQL 15+ — sumber kebenaran SQL |
+| `API-CONTRACTS.md` | Kontrak REST `/api/v1/*` dan protokol event WebSocket |
+| `DESIGN.md` | Daftar layar Admin dan Siswa, timeline builder, panggung challenge, dan aturan UI |
+| `DECISIONS.md` | Keputusan arsitektur dan produk yang dikunci |
+| `ROADMAP.md` | Peta jalan pembangunan aplikasi per tahap (Tahap 1–6) |
+| `TESTING.md` | Rencana pengujian unit, integrasi, E2E real-time, dan checklist deployment |
+| `DEPLOYMENT.md` | Panduan konfigurasi, reverse proxy HTTPS/WSS, dan deployment ke server online |
 
-Kalau kode dan dokumen berbeda, **dokumen yang benar** — kecuali dokumen itu jelas sudah usang. Dalam hal itu, hentikan dan tanyakan.
-
----
-
-## Urutan pengerjaan yang disarankan
-
-1. **Gerbang 0 `TESTING.md`**: buktikan `.sb3` dari editor lokal bisa diunggah ke Scratch dan berjalan. Jangan menulis fitur kelas sebelum ini lulus.
-2. **Middleware rantai izin** + bentuk galat seragam.
-3. **`GET /editor/session`** — uji jendela waktu di sini.
-4. **Simpan/muat snapshot** — inti editor.
-5. **Tombol Kumpulkan** — submission.
-6. **Endpoint guru** — kelas, tugas, daftar nilai, riwayat.
-7. **Autosave klien** + `sendBeacon`.
-8. **Retensi** dan pembersihan berkala.
-
-Langkah 1–4 sudah membuat sistem yang bisa dipakai mengajar. Sisanya menambah kenyamanan.
+Kalau kode dan dokumen berbeda, **dokumen yang benar** — kecuali dokumen tersebut jelas sudah usang. Dalam hal itu, hentikan dan tanyakan.

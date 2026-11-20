@@ -1,20 +1,16 @@
 # Dependensi
 node_modules/
-.objects/
+.media/
 
 # Environment
 .env
 .env.*
 !.env.example
 
-# Next.js (kelas/)
-kelas/.next/
-kelas/out/
-
-# scratch-gui (editor/)
-editor/build/
-editor/dist/
-editor/vendor/
+# Next.js & Build
+.next/
+out/
+dist/
 
 # Pengujian & coverage
 .playwright-mcp/
@@ -28,6 +24,5 @@ playwright/.cache/
 *.log
 *.tsbuildinfo
 npm-debug.log*
-.minio-data/
 .DS_Store
 Thumbs.db

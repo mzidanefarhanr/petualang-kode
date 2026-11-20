@@ -1,41 +1,31 @@
--- 001_akun.sql
--- Tabel akun: teachers, schools, students.
--- Sumber kebenaran skema: DATABASE.md Bagian 5.1.
+create extension if not exists pgcrypto;
 
-create table teachers (
+create table admins (
   id            uuid primary key default gen_random_uuid(),
-  email         text not null unique,
+  email         text not null,
   password_hash text not null,
   nama          text not null,
   dibuat_pada   timestamptz not null default now()
 );
 
-create unique index teachers_email_lower_unique
-  on teachers (lower(email));
-
-create table schools (
-  id         uuid primary key default gen_random_uuid(),
-  teacher_id uuid not null references teachers(id) on delete cascade,
-  nama       text not null,
-  catatan    text,
-
-  unique (id, teacher_id)
-);
+create unique index admins_email_lower_unique
+  on admins (lower(email));
 
 create table students (
-  id            uuid primary key default gen_random_uuid(),
-  username      text not null,
-  nama          text not null,
-  email         text,
-  password_hash text,
-  dibuat_pada   timestamptz not null default now(),
+  id              uuid primary key default gen_random_uuid(),
+  admin_id        uuid not null references admins(id) on delete cascade,
+  username        text not null,
+  nama            text not null,
+  password_hash   text not null,
+  diarsipkan_pada timestamptz,
+  dibuat_pada     timestamptz not null default now(),
 
+  unique (id, admin_id),
   check (length(trim(username)) >= 3)
 );
 
 create unique index students_username_lower_unique
   on students (lower(username));
 
-create unique index students_email_lower_unique
-  on students (lower(email))
-  where email is not null;
+create index students_admin_idx
+  on students (admin_id);
